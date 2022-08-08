@@ -75,7 +75,27 @@
 	</div>
 </section>
 
-<a href="/venues/{{ venue.id }}/edit"><button class="btn btn-primary btn-lg">Edit</button></a>
+<!-- Ajout de la section contenant le bouton supprimer -->
+
+<div class="container">
+	<div class="row">
+		<div class="col-md-2">
+			<a href="/venues/{{ venue.id }}/edit"><button class="btn btn-primary btn-lg">Edit</button></a>
+		</div>
+		<div class="col-md-2">
+			<form action="/venues/{{ venue.id }}" method="POST">
+				<input type="hidden" name="_method" value="DELETE" />
+				<button class="btn btn-danger btn-lg">Supprimer</button>
+			</form>
+		</div>
+	</div>
+</div>
+
+
+<!-- Implement a button to delete a Venue on a Venue Page, have it so that
+ clicking that button delete it from the db then redirect the user to the homepage -->
+
+
 
 {% endblock %}
 
