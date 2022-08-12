@@ -14,6 +14,7 @@ from flask_wtf import Form
 from forms import *
 from flask_migrate import Migrate
 from models import *
+from config import *
 
 #----------------------------------------------------------------------------#
 # App Config.
@@ -24,7 +25,8 @@ moment = Moment(app)
 app.config.from_object('config')
 
 # TODO: connect to a local postgresql database
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:shadow@localhost:5432/fyuur'
+
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 migrate = Migrate(app, db)
@@ -113,23 +115,29 @@ def show_venue(venue_id):
   # TODO: replace with real venue data from the venues table, using venue_id
   venue = Venue.query.get(venue_id)
 
+  # Update affichage des shows en utilisant les instruction JOIN
+  
   past_shows = []
+  past_shows_query = db.session.query(Show).join(Venue).filter(Show.venue_id==venue_id).filter(Show.start_date<datetime.now()).all()
+
+  for show in past_shows_query:
+    past_shows.append({
+      "artist_id": show.artist_id,
+      "artist_name": show.artist.name,
+      "artist_image_link": show.artist.image_link,
+      "start_time": show.start_date.strftime('%Y-%m-%d %H:%M:%S')
+    })
+
+  upcoming_shows_query = db.session.query(Show).join(Venue).filter(Show.venue_id==venue_id).filter(Show.start_date>datetime.now()).all()   
   upcoming_shows = []
-  for show in venue.venue_shows:
-    if show.start_date < datetime.now():
-      past_shows.append({
-        "artist_id": show.artist_id,
-        "artist_name": show.artist.name,
-        "artist_image_link": show.artist.image_link,
-        "start_time": show.start_date.strftime('%Y-%m-%d %H:%M:%S')
-      })
-    else:
-      upcoming_shows.append({
-        "artist_id": show.artist_id,
-        "artist_name": show.artist.name,
-        "artist_image_link": show.artist.image_link,
-        "start_time": show.start_date.strftime('%Y-%m-%d %H:%M:%S')
-      })
+  for show in upcoming_shows_query:
+    upcoming_shows.append({
+          "artist_id": show.artist_id,
+          "artist_name": show.artist.name,
+          "artist_image_link": show.artist.image_link,
+          "start_time": show.start_date.strftime('%Y-%m-%d %H:%M:%S'),
+        })
+
   data = {
     "id": venue.id,
     "name": venue.name,
@@ -148,6 +156,7 @@ def show_venue(venue_id):
     "past_shows_count": len(past_shows),
     "upcoming_shows_count": len(upcoming_shows)
   }
+  
   return render_template('pages/show_venue.html', venue=data)
 
 #  Create Venue
@@ -253,23 +262,54 @@ def show_artist(artist_id):
   # shows the artist page with the given artist_id
   # TODO: replace with real artist data from the artist table, using artist_id
   artist = Artist.query.get(artist_id)
+
   past_shows = []
+
+  # Update affichage des shows en utilisant les instruction JOIN
+
+  past_shows_query = db.session.query(Show).join(Venue).filter(Show.artist_id==artist_id).filter(Show.start_date<datetime.now()).all()
+
+  for show in past_shows_query:
+    past_shows.append({
+      "artist_id": show.artist_id,
+      "artist_name": show.artist.name,
+      "venue_image_link": show.venue.image_link,
+      "start_time": show.start_date.strftime('%Y-%m-%d %H:%M:%S')
+    })
+
+  upcoming_shows_query = db.session.query(Show).join(Venue).filter(Show.artist_id==artist_id).filter(Show.start_date>datetime.now()).all()   
   upcoming_shows = []
-  for show in artist.artist_shows:
-    if show.start_date < datetime.now():
-      past_shows.append({
-        "artist_id": show.artist_id,
-        "artist_name": show.artist.name,
-        "artist_image_link": show.artist.image_link,
-        "start_time": show.start_date.strftime('%Y-%m-%d %H:%M:%S')
-      })
-    else:
-      upcoming_shows.append({
-        "artist_id": show.artist_id,
-        "artist_name": show.artist.name,
-        "artist_image_link": show.artist.image_link,
-        "start_time": show.start_date.strftime('%Y-%m-%d %H:%M:%S')
-      })
+  for show in upcoming_shows_query:
+    upcoming_shows.append({
+          "artist_id": show.artist_id,
+          "artist_name": show.artist.name,
+          "venue_image_link": show.venue.image_link,
+          "start_time": show.start_date.strftime('%Y-%m-%d %H:%M:%S'),
+        })
+
+    # upcoming_shows = []
+    # upcoming_shows.append({
+    #       "artist_id": show.artist_id,
+    #       "artist_name": show.artist.name,
+    #       "artist_image_link": show.artist.image_link,
+    #       "start_time": show.start_date.strftime('%Y-%m-%d %H:%M:%S')
+    #     })
+    # for show in artist.artist_shows:
+    #   if show.start_date < datetime.now():
+    #     past_shows.append({
+    #       "artist_id": show.artist_id,
+    #       "artist_name": show.artist.name,
+    #       "artist_image_link": show.artist.image_link,
+    #       "start_time": show.start_date.strftime('%Y-%m-%d %H:%M:%S')
+    #     })
+    #   else:
+    #     upcoming_shows.append({
+    #       "artist_id": show.artist_id,
+    #       "artist_name": show.artist.name,
+    #       "artist_image_link": show.artist.image_link,
+    #       "start_time": show.start_date.strftime('%Y-%m-%d %H:%M:%S')
+    #     })
+    
   data = {
     "id": artist.id,
     "name": artist.name,
@@ -287,8 +327,9 @@ def show_artist(artist_id):
     "past_shows_count": len(past_shows),
     "upcoming_shows_count": len(upcoming_shows),
   }
-  return render_template('pages/show_artist.html', artist=data)
   
+  return render_template('pages/show_artist.html', artist=data)
+    
   # data = list(filter(lambda d: d['id'] == artist_id, [data1, data2, data3]))[0]
   # return render_template('pages/show_artist.html', artist=data)
 
@@ -399,31 +440,35 @@ def create_artist_submission():
   # called upon submitting the new artist listing form
   # TODO: insert form data as a new Venue record in the db, instead
   # TODO: modify data to be the data object returned from db insertion
-  try:
-    artist = Artist(
-      name=request.form['name'],
-      city=request.form['city'],
-      state=request.form['state'],
-      phone=request.form['phone'],
-      genres=request.form.getlist('genres'),
-      image_link=request.form['image_link'],
-      facebook_link=request.form['facebook_link'],
-      website=request.form['website_link'],
-      seeking_venue=True if 'seeking_venue' in request.form else False,
-      seeking_description=request.form['seeking_description']
-    )
-    # print('oooook ',artist)
-    db.session.add(artist)
-    db.session.commit()
-    # on successful db insert, flash success
-    flash('Artist ' + request.form['name'] + ' was successfully listed!')
-  except:
-    db.session.rollback()
-    # TODO: on unsuccessful db insert, flash an error instead.
-    flash('An error occurred. Artist ' + request.form['name'] + request.form['genres'] + ' could not be listed.')
-  finally:
-    db.session.close()
-  
+  form  = ArtistForm(request.form)
+  if form.validate():
+    try:
+      artist = Artist(
+        name=request.form['name'],
+        city=request.form['city'],
+        state=request.form['state'],
+        phone=request.form['phone'],
+        genres=request.form.getlist('genres'),
+        image_link=request.form['image_link'],
+        facebook_link=request.form['facebook_link'],
+        website=request.form['website_link'],
+        seeking_venue=True if 'seeking_venue' in request.form else False,
+        seeking_description=request.form['seeking_description']
+      )
+      # print('oooook ',artist)
+      db.session.add(artist)
+      db.session.commit()
+      # on successful db insert, flash success
+      flash('Artist ' + request.form['name'] + ' was successfully listed!')
+    except:
+      db.session.rollback()
+      # TODO: on unsuccessful db insert, flash an error instead.
+      flash('An error occurred. Artist ' + request.form['name'] + request.form['genres'] + ' could not be listed.')
+    finally:
+      db.session.close()
+  else:
+    flash('Une erreur est survenue. Veuillez verifier le formulaire')
+   
   # Redirige vers la page d'accueil avec les donnees rafraichies
   return redirect(url_for('index'))
 

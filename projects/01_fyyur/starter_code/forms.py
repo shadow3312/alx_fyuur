@@ -1,7 +1,8 @@
 from datetime import datetime
 from flask_wtf import Form
 from wtforms import StringField, SelectField, SelectMultipleField, DateTimeField, BooleanField
-from wtforms.validators import DataRequired, AnyOf, URL
+from wtforms.validators import DataRequired, AnyOf, URL, Regexp, ValidationError, Length, InputRequired
+
 
 class ShowForm(Form):
     artist_id = StringField(
@@ -82,9 +83,17 @@ class VenueForm(Form):
     address = StringField(
         'address', validators=[DataRequired()]
     )
+    # phone = StringField(
+    #     'phone', validators=[InputRequired(), phone_check]
+    # )
+
+    #Modification de la validation du numéro de téléphone conformement au format dans l'UI de l'app web
     phone = StringField(
-        'phone'
+        'phone', validators=[InputRequired(), Regexp(r'^[0-9]{3}-[0-9]{3}-[0-9]{4}$', message="Le numéro de téléphone doit être au format XXX-XXX-XXXX")]
     )
+
+    
+
     image_link = StringField(
         'image_link'
     )
@@ -191,10 +200,11 @@ class ArtistForm(Form):
             ('WY', 'WY'),
         ]
     )
+    
     phone = StringField(
-        # TODO implement validation logic for phone 
-        'phone'
+        'phone', validators=[InputRequired(), Regexp(r'^[0-9]{3}-[0-9]{3}-[0-9]{4}$', message="Le numéro de téléphone doit être au format XXX-XXX-XXXX")]
     )
+    
     image_link = StringField(
         'image_link'
     )
